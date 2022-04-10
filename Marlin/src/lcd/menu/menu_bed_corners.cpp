@@ -49,6 +49,9 @@
   #if ENABLED(BLTOUCH)
     #include "../../feature/bltouch.h"
   #endif
+  #if HAS_Z_SERVO_PROBE
+    #include "../../module/servo.h"
+  #endif
   #ifndef LEVEL_CORNERS_PROBE_TOLERANCE
     #define LEVEL_CORNERS_PROBE_TOLERANCE 0.2
   #endif
@@ -220,12 +223,14 @@ static void _lcd_level_bed_corners_get_next_position() {
   bool _lcd_level_bed_corners_probe(bool verify=false) {
     if (verify) do_blocking_move_to_z(current_position.z + LEVEL_CORNERS_Z_HOP); // do clearance if needed
     TERN_(BLTOUCH, if (!bltouch.high_speed_mode) bltouch.deploy()); // Deploy in LOW SPEED MODE on every probe action
+    TERN_(HAS_Z_SERVO_PROBE, DEPLOY_Z_SERVO());
     do_blocking_move_to_z(last_z - LEVEL_CORNERS_PROBE_TOLERANCE, MMM_TO_MMS(Z_PROBE_FEEDRATE_SLOW)); // Move down to lower tolerance
     if (TEST(endstops.trigger_state(), Z_MIN_PROBE)) { // check if probe triggered
       endstops.hit_on_purpose();
       set_current_from_steppers_for_axis(Z_AXIS);
       sync_plan_position();
       TERN_(BLTOUCH, if (!bltouch.high_speed_mode) bltouch.stow()); // Stow in LOW SPEED MODE on every trigger
+      TERN_(HAS_Z_SERVO_PROBE, STOW_Z_SERVO());
       // Triggered outside tolerance range?
       if (ABS(current_position.z - last_z) > LEVEL_CORNERS_PROBE_TOLERANCE) {
         last_z = current_position.z; // Above tolerance. Set a new Z for subsequent corners.
@@ -252,6 +257,7 @@ static void _lcd_level_bed_corners_get_next_position() {
       idle();
     }
     TERN_(BLTOUCH, if (!bltouch.high_speed_mode) bltouch.stow());
+    TERN_(HAS_Z_SERVO_PROBE, STOW_Z_SERVO());
     ui.goto_screen(_lcd_draw_probing);
     return (probe_triggered);
   }
@@ -273,6 +279,7 @@ static void _lcd_level_bed_corners_get_next_position() {
       do_blocking_move_to_xy(current_position);           // Goto corner
 
       TERN_(BLTOUCH, if (bltouch.high_speed_mode) bltouch.deploy()); // Deploy in HIGH SPEED MODE
+      TERN_(HAS_Z_SERVO_PROBE, DEPLOY_Z_SERVO());
       if (!_lcd_level_bed_corners_probe()) {              // Probe down to tolerance
         if (_lcd_level_bed_corners_raise()) {             // Prompt user to raise bed if needed
           #if ENABLED(LEVEL_CORNERS_VERIFY_RAISED)        // Verify
