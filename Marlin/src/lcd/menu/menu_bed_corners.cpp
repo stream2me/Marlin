@@ -279,7 +279,6 @@ static void _lcd_level_bed_corners_get_next_position() {
       do_blocking_move_to_xy(current_position);           // Goto corner
 
       TERN_(BLTOUCH, if (bltouch.high_speed_mode) bltouch.deploy()); // Deploy in HIGH SPEED MODE
-      TERN_(HAS_Z_SERVO_PROBE, DEPLOY_Z_SERVO());
       if (!_lcd_level_bed_corners_probe()) {              // Probe down to tolerance
         if (_lcd_level_bed_corners_raise()) {             // Prompt user to raise bed if needed
           #if ENABLED(LEVEL_CORNERS_VERIFY_RAISED)        // Verify
